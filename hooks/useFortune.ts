@@ -11,7 +11,7 @@ import { formatTokenSummary } from "@/lib/formatTokens";
 export function useFortune() {
   const [isGenerating, setIsGenerating] = useState(false);
   const { tokens, setFortune, setError, setLoading } = useAppStore();
-  const { createNewChat } = useChatStore();
+  const { addChat } = useChatStore();
 
   const generateFortune = async () => {
     if (tokens.length === 0) {
@@ -39,10 +39,13 @@ export function useFortune() {
 
       const data = await response.json();
       const fortune = data.fortune;
-      setFortune(fortune);
 
-      // Create a new chat session with this fortune
-      createNewChat(fortune, tokenSummary);
+      // Create a new chat session with fortune as the first message
+      // This will automatically add the fortune as the first assistant message
+      addChat(fortune, tokenSummary);
+
+      // Clear fortune from app store since it's now in the chat
+      setFortune("");
     } catch (error) {
       setError(
         error instanceof Error ? error.message : "Failed to generate fortune"

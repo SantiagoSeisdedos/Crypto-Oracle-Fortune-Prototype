@@ -13,18 +13,25 @@ export async function POST(request: NextRequest) {
     }
 
     // Format conversation history
-    const historyText = history
-      ?.map(
-        (msg: { role: string; content: string }) =>
-          `${msg.role === "user" ? "User" : "Oracle"}: ${msg.content}`
-      )
-      .join("\n") || "No previous conversation.";
+    const historyText =
+      history
+        ?.map(
+          (msg: { role: string; content: string }) =>
+            `${msg.role === "user" ? "User" : "Oracle"}: ${msg.content}`
+        )
+        .join("\n") || "No previous conversation.";
 
     // Format the prompt
     const prompt = CHAT_PROMPT_TEMPLATE.replace("{FORTUNE}", fortune)
       .replace("{TOKENS}", tokens)
       .replace("{HISTORY}", historyText)
       .replace("{QUESTION}", question);
+
+    console.log(" ");
+    console.log("--------------------------------");
+    console.log("+ + + + + prompt", prompt);
+    console.log("--------------------------------");
+    console.log(" ");
 
     // Call OpenAI API
     const completion = await openai.chat.completions.create({
@@ -41,10 +48,16 @@ export async function POST(request: NextRequest) {
         },
       ],
       temperature: 0.8,
-      max_tokens: 300,
+      max_tokens: 400,
     });
 
     const response = completion.choices[0]?.message?.content || "";
+
+    console.log(" ");
+    console.log("--------------------------------");
+    console.log("+ + + + + response", response);
+    console.log("--------------------------------");
+    console.log(" ");
 
     return NextResponse.json({ response });
   } catch (error) {
@@ -60,4 +73,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

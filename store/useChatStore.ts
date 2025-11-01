@@ -1,107 +1,150 @@
-import { create } from "zustand";
-import { ChatSession, getChatSessions, saveChatSession, deleteChatSession, getLimits, hasReachedMessageLimit, canCreateNewChat } from "@/lib/chatStorage";
+"use client";
 
-interface ChatState {
-  currentChatId: string | null;
-  chats: ChatSession[];
-  
-  // Actions
-  loadChats: () => void;
-  createNewChat: (fortune: string, tokens: string) => string;
-  selectChat: (chatId: string) => void;
-  deleteChat: (chatId: string) => void;
-  addMessage: (role: "user" | "assistant", content: string) => void;
-  getCurrentChat: () => ChatSession | null;
-  canSendMessage: () => boolean;
-  canCreateChat: () => boolean;
-  getRemainingMessages: () => number;
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+
+interface Message {
+  role: "user" | "assistant";
+  content: string;
+  timestamp?: number;
 }
 
-export const useChatStore = create<ChatState>((set, get) => ({
-  currentChatId: null,
-  chats: [],
+interface Chat {
+  id: string;
+  title: string;
+  chatHistory: Message[];
+  fortune?: string;
+  tokens?: string;
+  createdAt: number;
+  updatedAt: number;
+}
 
-  loadChats: () => {
-    const chats = getChatSessions();
-    const { currentChatId } = get();
-    // Ensure current chat ID is still valid
-    const validCurrentChatId = chats.some((c) => c.id === currentChatId) ? currentChatId : (chats[0]?.id || null);
-    set({ chats, currentChatId: validCurrentChatId });
-  },
+interface ChatStore {
+  chats: Chat[];
+  currentChatId: string | null;
+  addChat: (fortune?: string, tokens?: string) => void;
+  deleteChat: (id: string) => void;
+  addMessage: (chatId: string, message: Message) => void;
+  getCurrentChat: () => Chat | null;
+  setCurrentChatId: (id: string) => void;
+  getChatsCount: () => number;
+  canCreateChat: () => boolean;
+  loadChats: () => void;
+  updateChat: (id: string, updates: Partial<Chat>) => void;
+}
 
-  createNewChat: (fortune: string, tokens: string) => {
-    const { loadChats } = get();
-    
-    if (!canCreateNewChat()) {
-      throw new Error("Maximum number of chats reached. Delete an existing chat to create a new one.");
+const MAX_CHATS = 3;
+
+function generateChatTitle(): string {
+  const date = new Date();
+  const timeStr = date.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const dateStr = date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+  return `Chat • ${dateStr} ${timeStr}`;
+}
+
+export const useChatStore = create<ChatStore>()(
+  persist(
+    (set, get) => ({
+      chats: [],
+      currentChatId: null,
+
+      addChat: (fortune?: string, tokens?: string) => {
+        // If fortune is provided, add it as the first assistant message
+        const initialMessages: Message[] = fortune
+          ? [
+              {
+                role: "assistant",
+                content: fortune,
+                timestamp: Date.now(),
+              },
+            ]
+          : [];
+
+        const newChat: Chat = {
+          id: Date.now().toString(),
+          title: generateChatTitle(),
+          chatHistory: initialMessages,
+          fortune,
+          tokens,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        };
+        set((state) => ({
+          chats: [newChat, ...state.chats],
+          currentChatId: newChat.id,
+        }));
+      },
+
+      updateChat: (id: string, updates: Partial<Chat>) => {
+        set((state) => ({
+          chats: state.chats.map((chat) =>
+            chat.id === id ? { ...chat, ...updates, updatedAt: Date.now() } : chat
+          ),
+        }));
+      },
+
+      deleteChat: (id: string) => {
+        set((state) => {
+          const updatedChats = state.chats.filter((chat) => chat.id !== id);
+          const newCurrentChatId =
+            state.currentChatId === id
+              ? updatedChats.length > 0
+                ? updatedChats[0].id
+                : null
+              : state.currentChatId;
+          return {
+            chats: updatedChats,
+            currentChatId: newCurrentChatId,
+          };
+        });
+      },
+
+      addMessage: (chatId: string, message: Message) => {
+        set((state) => ({
+          chats: state.chats.map((chat) =>
+            chat.id === chatId
+              ? {
+                  ...chat,
+                  chatHistory: [...chat.chatHistory, message],
+                  updatedAt: Date.now(),
+                }
+              : chat
+          ),
+        }));
+      },
+
+      getCurrentChat: () => {
+        const state = get();
+        return (
+          state.chats.find((chat) => chat.id === state.currentChatId) || null
+        );
+      },
+
+      setCurrentChatId: (id: string) => {
+        set({ currentChatId: id });
+      },
+
+      getChatsCount: () => {
+        return get().chats.length;
+      },
+
+      canCreateChat: () => {
+        return get().chats.length < MAX_CHATS;
+      },
+
+      loadChats: () => {
+        // Trigger hydration - don't create empty chats
+        // Chats should only be created when fortune is generated
+      },
+    }),
+    {
+      name: "chat-store",
     }
-
-    const chatId = `chat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const newChat: ChatSession = {
-      id: chatId,
-      fortune,
-      tokens,
-      chatHistory: [],
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    };
-
-    saveChatSession(newChat);
-    loadChats();
-    set({ currentChatId: chatId });
-    return chatId;
-  },
-
-  selectChat: (chatId: string) => {
-    set({ currentChatId: chatId });
-  },
-
-  deleteChat: (chatId: string) => {
-    const { loadChats } = get();
-    deleteChatSession(chatId);
-    loadChats();
-    const chats = getChatSessions();
-    const newCurrentChatId = chatId === get().currentChatId ? (chats[0]?.id || null) : get().currentChatId;
-    set({ currentChatId: newCurrentChatId });
-  },
-
-  addMessage: (role: "user" | "assistant", content: string) => {
-    const { currentChatId, loadChats } = get();
-    if (!currentChatId) return;
-
-    const chats = getChatSessions();
-    const chat = chats.find((c) => c.id === currentChatId);
-    if (!chat) return;
-
-    chat.chatHistory.push({ role, content });
-    chat.updatedAt = Date.now();
-    
-    saveChatSession(chat);
-    loadChats();
-  },
-
-  getCurrentChat: () => {
-    const { currentChatId, chats } = get();
-    if (!currentChatId) return null;
-    return chats.find((c) => c.id === currentChatId) || null;
-  },
-
-  canSendMessage: () => {
-    const currentChat = get().getCurrentChat();
-    if (!currentChat) return false;
-    return !hasReachedMessageLimit(currentChat);
-  },
-
-  canCreateChat: () => {
-    return canCreateNewChat();
-  },
-
-  getRemainingMessages: () => {
-    const currentChat = get().getCurrentChat();
-    if (!currentChat) return 0;
-    const { maxMessagesPerChat } = getLimits();
-    const userMessages = currentChat.chatHistory.filter((msg) => msg.role === "user").length;
-    return Math.max(0, maxMessagesPerChat - userMessages);
-  },
-}));
-
+  )
+);

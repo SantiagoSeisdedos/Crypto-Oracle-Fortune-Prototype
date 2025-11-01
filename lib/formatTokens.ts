@@ -9,6 +9,7 @@ export interface TokenData {
   decimals: number;
   chainId: number;
   chainName: string;
+  chainLogo?: string; // Chain logo URL
   usdValue?: number;
   logo?: string; // Token logo URL
 }
@@ -35,7 +36,7 @@ export function getTopTokens(
 
 // Format token summary for AI prompt
 export function formatTokenSummary(tokens: TokenData[]): string {
-  const topTokens = getTopTokens(tokens, 3);
+  const topTokens = getTopTokens(tokens, 20);
   return topTokens
     .map(
       (token) =>

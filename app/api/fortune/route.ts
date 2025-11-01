@@ -15,6 +15,12 @@ export async function POST(request: NextRequest) {
     // Format the prompt with user's tokens
     const prompt = FORTUNE_PROMPT_TEMPLATE.replace("{TOKENS}", tokens);
 
+    console.log(" ");
+    console.log("--------------------------------");
+    console.log("+ + + + + prompt", prompt);
+    console.log("--------------------------------");
+    console.log(" ");
+
     // Call OpenAI API
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini", // Using GPT-4o-mini for cost efficiency
@@ -35,6 +41,12 @@ export async function POST(request: NextRequest) {
 
     const fortune = completion.choices[0]?.message?.content || "";
 
+    console.log(" ");
+    console.log("--------------------------------");
+    console.log("+ + + + + fortune", fortune);
+    console.log("--------------------------------");
+    console.log(" ");
+
     return NextResponse.json({ fortune });
   } catch (error) {
     console.error("Error generating fortune:", error);
@@ -47,4 +59,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
