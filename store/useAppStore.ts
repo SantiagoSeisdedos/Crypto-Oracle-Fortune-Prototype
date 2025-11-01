@@ -15,17 +15,11 @@ interface AppState {
   tokens: TokenData[];
   // Cache of tokens by address-chainId combination
   tokenCache: TokenCache;
-  fortune: string | null;
-  chatHistory: Array<{ role: "user" | "assistant"; content: string }>;
-  isLoading: boolean;
   error: string | null;
 
   // Actions
   setTokens: (tokens: TokenData[], address?: string, chainId?: number) => void;
   getCachedTokens: (address: string, chainId: number) => TokenData[] | null;
-  setFortune: (fortune: string) => void;
-  addChatMessage: (role: "user" | "assistant", content: string) => void;
-  setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   reset: () => void;
 }
@@ -35,9 +29,6 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       tokens: [],
       tokenCache: {},
-      fortune: null,
-      chatHistory: [],
-      isLoading: false,
       error: null,
 
       setTokens: (tokens, address, chainId) => {
@@ -73,20 +64,11 @@ export const useAppStore = create<AppState>()(
         }));
       },
 
-      setFortune: (fortune) => set({ fortune }),
-      addChatMessage: (role, content) =>
-        set((state) => ({
-          chatHistory: [...state.chatHistory, { role, content }],
-        })),
-      setLoading: (isLoading) => set({ isLoading }),
       setError: (error) => set({ error }),
       reset: () =>
         set({
           tokens: [],
           tokenCache: {},
-          fortune: null,
-          chatHistory: [],
-          isLoading: false,
           error: null,
         }),
     }),
@@ -95,7 +77,6 @@ export const useAppStore = create<AppState>()(
       // Only persist tokenCache, not tokens (tokens are derived from cache)
       partialize: (state) => ({
         tokenCache: state.tokenCache,
-        fortune: state.fortune,
       }),
     }
   )

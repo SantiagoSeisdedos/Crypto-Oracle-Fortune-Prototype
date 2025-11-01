@@ -1,7 +1,5 @@
 "use client";
 
-import type React from "react";
-
 import { motion } from "framer-motion";
 import { Trash2, MessageSquare } from "lucide-react";
 import { useChatStore } from "@/store/useChatStore";

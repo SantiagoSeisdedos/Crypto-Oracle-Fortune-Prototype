@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { openai, CHAT_PROMPT_TEMPLATE } from "@/lib/openaiClient";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,12 +28,6 @@ export async function POST(request: NextRequest) {
       .replace("{HISTORY}", historyText)
       .replace("{QUESTION}", question);
 
-    console.log(" ");
-    console.log("--------------------------------");
-    console.log("+ + + + + prompt", prompt);
-    console.log("--------------------------------");
-    console.log(" ");
-
     // Call OpenAI API
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -53,15 +48,9 @@ export async function POST(request: NextRequest) {
 
     const response = completion.choices[0]?.message?.content || "";
 
-    console.log(" ");
-    console.log("--------------------------------");
-    console.log("+ + + + + response", response);
-    console.log("--------------------------------");
-    console.log(" ");
-
     return NextResponse.json({ response });
   } catch (error) {
-    console.error("Error generating chat response:", error);
+    logger.error("Error generating chat response:", error);
     return NextResponse.json(
       {
         error:

@@ -4,6 +4,8 @@
  * Documentation: https://coinmarketcap.com/api/documentation/v1/
  */
 
+import { logger } from "./logger";
+
 export interface CoinMarketCapTokenMetadata {
   id?: string;
   symbol?: string;
@@ -76,7 +78,7 @@ async function getTokenIdByContract(
 
     return null;
   } catch (error) {
-    console.error("CoinMarketCap mapping error:", error);
+    logger.error("CoinMarketCap mapping error:", error);
     return null;
   }
 }
@@ -130,7 +132,7 @@ async function searchTokenBySymbol(
 
     return null;
   } catch (error) {
-    console.error("CoinMarketCap search error:", error);
+    logger.error("CoinMarketCap search error:", error);
     return null;
   }
 }
@@ -202,7 +204,7 @@ async function getTokenInfoById(tokenId: string): Promise<CoinMarketCapTokenMeta
       volume_24h,
     };
   } catch (error) {
-    console.error("CoinMarketCap info error:", error);
+    logger.error("CoinMarketCap info error:", error);
     return null;
   }
 }
@@ -239,7 +241,7 @@ export async function getCoinMarketCapTokenMetadata(
     // Get token info using the token ID
     return await getTokenInfoById(tokenId);
   } catch (error) {
-    console.error("CoinMarketCap API error:", error);
+    logger.error("CoinMarketCap API error:", error);
     return null;
   }
 }

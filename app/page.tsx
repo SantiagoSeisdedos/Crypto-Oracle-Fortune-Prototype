@@ -11,6 +11,7 @@ import { useFortune } from "@/hooks/useFortune";
 import { useAppStore } from "@/store/useAppStore";
 import { motion } from "framer-motion";
 import { Plus, Wallet } from "lucide-react";
+import { WelcomeCTA } from "@/components/WelcomeCTA";
 import { MAX_CHATS, MAX_AI_MESSAGES_PER_CHAT } from "@/hooks/useChat";
 
 export default function Page() {
@@ -26,7 +27,7 @@ export default function Page() {
   const [isTokenSidebarOpen, setIsTokenSidebarOpen] = useState(false);
   const { isConnected, isFetchingTokens } = useWallet();
   const { generateFortune, isGenerating } = useFortune();
-  const { tokens, fortune, isLoading, error } = useAppStore();
+  const { tokens, error } = useAppStore();
 
   useEffect(() => {
     loadChats();
@@ -64,153 +65,21 @@ export default function Page() {
                 </span>
               </motion.button>
             )}
-            <WalletConnectButton />
+            <div className={`${!isConnected ? "hidden" : "block"}`}>
+              <WalletConnectButton />
+            </div>
           </div>
         </div>
       </div>
 
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* Chat Sidebar - Left */}
-        <div className="hidden lg:flex lg:flex-col lg:w-64 border-r border-purple-500/20 bg-slate-900/40 p-4 gap-4 overflow-y-auto">
-          <div>
-            <h2 className="text-lg font-bold text-purple-300 mb-3">
-              Chat History
-            </h2>
-            <motion.button
-              onClick={() => {
-                if (canCreateChat()) {
-                  // Create empty chat - user can start chatting or generate fortune
-                  addChat();
-                }
-              }}
-              disabled={!canCreateChat()}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="w-full bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition-all flex items-center justify-center gap-2"
-              title="Create new chat"
-            >
-              <Plus size={18} />
-              New Chat
-            </motion.button>
-          </div>
-
-          {/* Chat List */}
-          <div className="flex-1 space-y-2 overflow-y-auto">
-            {chats.length === 0 ? (
-              <p className="text-sm text-gray-500 text-center py-4">
-                No chats yet
-              </p>
-            ) : (
-              chats.map((chat) => (
-                <ChatListItem
-                  key={chat.id}
-                  chatId={chat.id}
-                  title={chat.title}
-                  isActive={currentChatId === chat.id}
-                  onSelect={() => setCurrentChatId(chat.id)}
-                />
-              ))
-            )}
-          </div>
-
-          {/* Sidebar Footer Info */}
-          <div className="text-xs text-gray-500 border-t border-purple-500/20 pt-4 space-y-1">
-            <p className="font-medium text-purple-400 mb-2">Limits:</p>
-            <p>• {MAX_CHATS} chats max</p>
-            <p>• {MAX_AI_MESSAGES_PER_CHAT} AI responses per chat</p>
-          </div>
-        </div>
-
-        {/* Main Content Area */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-8">
-          <div className="max-w-4xl mx-auto space-y-8">
-            {/* Error Display */}
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-red-900/30 border border-red-500/50 rounded-lg p-4 text-center text-red-300"
-              >
-                {error}
-              </motion.div>
-            )}
-
-            {/* Token List Info & Generate Fortune Button - Only show when no active chat */}
-            {isConnected && tokens.length > 0 && !currentChat && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2, duration: 0.5 }}
-                className="text-center"
-              >
-                <p className="text-gray-300 mb-4">
-                  {tokens.length} token{tokens.length !== 1 ? "s" : ""} found in
-                  your wallet
-                </p>
-                <motion.button
-                  onClick={generateFortune}
-                  disabled={isGenerating || isFetchingTokens}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed px-8 py-4 rounded-xl font-bold text-lg transition-all transform shadow-lg"
-                >
-                  {isGenerating ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <motion.div
-                        className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
-                        animate={{ rotate: 360 }}
-                        transition={{
-                          duration: 1,
-                          repeat: Infinity,
-                          ease: "linear",
-                        }}
-                      />
-                      Generating Fortune...
-                    </span>
-                  ) : (
-                    "🔮 Generate Your Fortune"
-                  )}
-                </motion.button>
-              </motion.div>
-            )}
-
-            {/* Loading State - Only show when generating fortune or fetching tokens, NOT when chatting */}
-            {(isGenerating || isFetchingTokens) && !currentChat && (
-              <div className="text-center">
-                <motion.div
-                  className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                />
-                <p className="text-gray-400 mt-4">
-                  {isFetchingTokens
-                    ? "Loading your tokens..."
-                    : isGenerating
-                    ? "The oracle is reading your crypto destiny..."
-                    : ""}
-                </p>
-              </div>
-            )}
-
-            {/* Chat Box - Only show when there's an active chat */}
-            {currentChat && <ChatBox />}
-
-            {/* Mobile Chat List */}
-            <div className="lg:hidden mt-8 pt-8 border-t border-purple-500/20">
-              <h3 className="text-lg font-bold text-purple-300 mb-4">
+        {/* Chat Sidebar - Left - Only show when wallet is connected */}
+        {isConnected && (
+          <div className="hidden lg:flex lg:flex-col lg:w-64 border-r border-purple-500/20 bg-slate-900/40 p-4 gap-4 overflow-y-auto">
+            <div>
+              <h2 className="text-lg font-bold text-purple-300 mb-3">
                 Chat History
-              </h3>
-              <div className="space-y-2 mb-4">
-                {chats.map((chat) => (
-                  <ChatListItem
-                    key={chat.id}
-                    chatId={chat.id}
-                    title={chat.title}
-                    isActive={currentChatId === chat.id}
-                    onSelect={() => setCurrentChatId(chat.id)}
-                  />
-                ))}
-              </div>
+              </h2>
               <motion.button
                 onClick={() => {
                   if (canCreateChat()) {
@@ -228,11 +97,150 @@ export default function Page() {
                 New Chat
               </motion.button>
             </div>
+
+            {/* Chat List */}
+            <div className="flex-1 space-y-2 overflow-y-auto">
+              {chats.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-4">
+                  No chats yet
+                </p>
+              ) : (
+                chats.map((chat) => (
+                  <ChatListItem
+                    key={chat.id}
+                    chatId={chat.id}
+                    title={chat.title}
+                    isActive={currentChatId === chat.id}
+                    onSelect={() => setCurrentChatId(chat.id)}
+                  />
+                ))
+              )}
+            </div>
+
+            {/* Sidebar Footer Info */}
+            <div className="text-xs text-gray-500 border-t border-purple-500/20 pt-4 space-y-1">
+              <p className="font-medium text-purple-400 mb-2">Limits:</p>
+              <p>• {MAX_CHATS} chats max</p>
+              <p>• {MAX_AI_MESSAGES_PER_CHAT} AI responses per chat</p>
+            </div>
+          </div>
+        )}
+
+        {/* Main Content Area */}
+        <div className="flex-1 overflow-y-auto p-4 md:p-8">
+          <div className="max-w-4xl mx-auto space-y-8">
+            {/* Welcome CTA - Show when wallet is not connected */}
+            {!isConnected && <WelcomeCTA />}
+
+            {/* Error Display - Only show when connected */}
+            {isConnected && error && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-red-900/30 border border-red-500/50 rounded-lg p-4 text-center text-red-300"
+              >
+                {error}
+              </motion.div>
+            )}
+
+            {/* Token List Info & Generate Fortune Button - Show when no chat or chat has no messages */}
+            {isConnected &&
+              tokens.length > 0 &&
+              (!currentChat || currentChat.chatHistory.length === 0) && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2, duration: 0.5 }}
+                  className="text-center"
+                >
+                  <p className="text-gray-300 mb-4">
+                    {tokens.length} token{tokens.length !== 1 ? "s" : ""} found
+                    in your wallet
+                  </p>
+                  <motion.button
+                    onClick={generateFortune}
+                    disabled={isGenerating || isFetchingTokens}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed px-8 py-4 rounded-xl font-bold text-lg transition-all transform shadow-lg"
+                  >
+                    {isGenerating ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <motion.div
+                          className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
+                          animate={{ rotate: 360 }}
+                          transition={{
+                            duration: 1,
+                            repeat: Infinity,
+                            ease: "linear",
+                          }}
+                        />
+                        Generating Fortune...
+                      </span>
+                    ) : (
+                      "🔮 Generate Your Fortune"
+                    )}
+                  </motion.button>
+                </motion.div>
+              )}
+
+            {/* Loading State - Only show when generating fortune or fetching tokens, NOT when chatting */}
+            {(isGenerating || isFetchingTokens) &&
+              (!currentChat || currentChat.chatHistory.length === 0) && (
+                <div className="text-center">
+                  <p className="text-gray-400 mt-4">
+                    {isFetchingTokens
+                      ? "Loading your tokens..."
+                      : isGenerating
+                      ? "The oracle is reading your crypto destiny..."
+                      : ""}
+                  </p>
+                </div>
+              )}
+
+            {/* Chat Box - Only show when wallet is connected and there's an active chat */}
+            {isConnected && currentChat && <ChatBox />}
+
+            {/* Mobile Chat List - Only show when wallet is connected */}
+            {isConnected && (
+              <div className="lg:hidden mt-8 pt-8 border-t border-purple-500/20">
+                <h3 className="text-lg font-bold text-purple-300 mb-4">
+                  Chat History
+                </h3>
+                <div className="space-y-2 mb-4">
+                  {chats.map((chat) => (
+                    <ChatListItem
+                      key={chat.id}
+                      chatId={chat.id}
+                      title={chat.title}
+                      isActive={currentChatId === chat.id}
+                      onSelect={() => setCurrentChatId(chat.id)}
+                    />
+                  ))}
+                </div>
+                <motion.button
+                  onClick={() => {
+                    if (canCreateChat()) {
+                      // Create empty chat - user can start chatting or generate fortune
+                      addChat();
+                    }
+                  }}
+                  disabled={!canCreateChat()}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="w-full bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition-all flex items-center justify-center gap-2"
+                  title="Create new chat"
+                >
+                  <Plus size={18} />
+                  New Chat
+                </motion.button>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Token Sidebar - Right (Desktop always visible when open) */}
-        {isTokenSidebarOpen && (
+        {isConnected && isTokenSidebarOpen && (
           <div className="hidden lg:flex">
             <TokenSidebar
               isOpen={true}

@@ -15,6 +15,7 @@ import { TokenData } from "@/lib/formatTokens";
 import { formatBalance } from "@/lib/utils";
 import { CHAINS, getChainLogo } from "@/lib/chains";
 import { ALCHEMY_BASE_URLS } from "@/lib/alchemy";
+import { logger } from "@/lib/logger";
 
 /**
  * Get chain logo for a chainId, with fallback logic
@@ -95,7 +96,7 @@ async function fetchTokenBalancesForChain(
           await new Promise((resolve) => setTimeout(resolve, waitTime));
           continue;
         }
-        console.warn(`Alchemy API error (${response.status}) for chain ${chainId}`);
+        logger.warn(`Alchemy API error (${response.status}) for chain ${chainId}`);
         return null;
       }
 
@@ -107,14 +108,14 @@ async function fetchTokenBalancesForChain(
           await new Promise((resolve) => setTimeout(resolve, waitTime));
           continue;
         }
-        console.warn(`Alchemy API error for chain ${chainId}: ${data.error.message || "Unknown error"}`);
+        logger.warn(`Alchemy API error for chain ${chainId}: ${data.error.message || "Unknown error"}`);
         return null;
       }
 
       return data.result;
     } catch (error) {
       if (attempt === retries) {
-        console.error(`Error fetching token balances for chain ${chainId}:`, error);
+        logger.error(`Error fetching token balances for chain ${chainId}:`, error);
         return null;
       }
       const waitTime = Math.pow(2, attempt) * 1000;
@@ -276,7 +277,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 1: Fetch balances from all supported chains in parallel
-    console.log(`Fetching balances from all chains for address: ${address}`);
     const balanceMap = await fetchAllChainBalances(address);
 
     if (balanceMap.size === 0) {
@@ -284,11 +284,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 2: Fetch all token metadata from Li.Fi in a single call
-    console.log("Fetching token metadata from Li.Fi...");
     const lifiTokens = await fetchLiFiTokenMetadata();
 
     // Step 3: Combine balances with metadata
-    console.log("Combining balances with metadata...");
     const allTokens = combineBalancesWithMetadata(balanceMap, lifiTokens);
 
     // Sort by USD value (highest first)
@@ -308,14 +306,12 @@ export async function POST(request: NextRequest) {
       balanceRaw: token.balanceRaw.toString(),
     }));
 
-    console.log(`Successfully fetched ${tokensWithSerializedBigInt.length} tokens`);
-
     return NextResponse.json(
       { tokens: tokensWithSerializedBigInt },
       { status: 200 }
     );
   } catch (error) {
-    console.error("Error in balances API route:", error);
+    logger.error("Error in balances API route:", error);
     return NextResponse.json(
       {
         error:

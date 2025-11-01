@@ -3,6 +3,7 @@ import {
   fetchLiFiTokenMetadata,
   findNativeTokenMetadata,
 } from "@/lib/lifi";
+import { logger } from "@/lib/logger";
 
 /**
  * GET /api/native-token-metadata?chainId=1
@@ -45,9 +46,6 @@ export async function GET(request: NextRequest) {
     // Calculate USD value if we have price (but not balance, so we return price only)
     const priceUSD = parseFloat(nativeTokenMetadata.priceUSD) || 0;
 
-    console.log("nativeTokenMetadata", nativeTokenMetadata);
-    console.log("priceUSD", priceUSD);
-
     return NextResponse.json(
       {
         logo: nativeTokenMetadata.logoURI || undefined,
@@ -59,7 +57,7 @@ export async function GET(request: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    console.error("Error in native-token-metadata API route:", error);
+    logger.error("Error in native-token-metadata API route:", error);
     return NextResponse.json(
       {
         error:

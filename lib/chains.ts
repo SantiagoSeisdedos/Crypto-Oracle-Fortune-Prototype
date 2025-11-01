@@ -124,7 +124,7 @@ if (typeof window !== "undefined") {
       );
     }
   } catch (error) {
-    console.warn("Failed to load chain metadata cache:", error);
+    // Silently fail - cache loading failures are non-critical
   }
 }
 
@@ -137,7 +137,7 @@ function saveCache() {
     const cacheObj = Object.fromEntries(metadataCache);
     localStorage.setItem(CHAIN_METADATA_CACHE_KEY, JSON.stringify(cacheObj));
   } catch (error) {
-    console.warn("Failed to save chain metadata cache:", error);
+    // Silently fail - cache saving failures are non-critical
   }
 }
 

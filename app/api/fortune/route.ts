@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { openai, FORTUNE_PROMPT_TEMPLATE } from "@/lib/openaiClient";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,12 +15,6 @@ export async function POST(request: NextRequest) {
 
     // Format the prompt with user's tokens
     const prompt = FORTUNE_PROMPT_TEMPLATE.replace("{TOKENS}", tokens);
-
-    console.log(" ");
-    console.log("--------------------------------");
-    console.log("+ + + + + prompt", prompt);
-    console.log("--------------------------------");
-    console.log(" ");
 
     // Call OpenAI API
     const completion = await openai.chat.completions.create({
@@ -41,15 +36,9 @@ export async function POST(request: NextRequest) {
 
     const fortune = completion.choices[0]?.message?.content || "";
 
-    console.log(" ");
-    console.log("--------------------------------");
-    console.log("+ + + + + fortune", fortune);
-    console.log("--------------------------------");
-    console.log(" ");
-
     return NextResponse.json({ fortune });
   } catch (error) {
-    console.error("Error generating fortune:", error);
+    logger.error("Error generating fortune:", error);
     return NextResponse.json(
       {
         error:

@@ -2,8 +2,6 @@
 
 import { useCallback, useState } from "react";
 import { useChatStore } from "@/store/useChatStore";
-import { useAppStore } from "@/store/useAppStore";
-import { formatTokenSummary } from "@/lib/formatTokens";
 
 interface Message {
   role: "user" | "assistant";
@@ -18,7 +16,6 @@ export const MAX_CHATS = 3;
 export function useChat() {
   const [isLoading, setIsLoading] = useState(false);
   const { addMessage, getCurrentChat, getChatsCount } = useChatStore();
-  const { tokens: appTokens, fortune: appFortune } = useAppStore();
 
   const currentChat = getCurrentChat();
   // Count only AI/assistant messages (includes the fortune message)
@@ -33,12 +30,10 @@ export function useChat() {
   // Remaining AI responses (the fortune counts as 1, so if aiMessageCount is 1, remaining is 4)
   const remainingMessages = Math.max(0, MAX_AI_MESSAGES_PER_CHAT - aiMessageCount);
 
-  // Get fortune and tokens from chat or app store
-  // If chat already has messages, use its stored fortune and tokens
-  const fortune = currentChat?.fortune || appFortune || "";
-  const tokens =
-    currentChat?.tokens ||
-    (appTokens.length > 0 ? formatTokenSummary(appTokens) : "");
+  // Get fortune and tokens from chat
+  // Chats store their own fortune and tokens
+  const fortune = currentChat?.fortune || "";
+  const tokens = currentChat?.tokens || "";
 
   const sendMessage = useCallback(
     async (userMessage: string) => {

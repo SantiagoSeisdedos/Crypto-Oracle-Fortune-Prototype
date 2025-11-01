@@ -6,6 +6,7 @@ import { TokenData } from "@/lib/formatTokens";
 import { CHAINS, getChainLogo, setChainLogo } from "@/lib/chains";
 import { formatBalance } from "@/lib/utils";
 import { useAppStore } from "@/store/useAppStore";
+import { logger } from "@/lib/logger";
 
 /**
  * Fetch native token metadata from Li.Fi (logo and USD price)
@@ -64,7 +65,7 @@ export function useWallet() {
     chainId,
   });
   const { chains, switchChain } = useSwitchChain();
-  const { setTokens, setLoading, setError } = useAppStore();
+  const { setTokens, setError } = useAppStore();
   const [isFetchingTokens, setIsFetchingTokens] = useState(false);
 
   // Refs to prevent multiple simultaneous fetches and track current fetch
@@ -144,21 +145,19 @@ export function useWallet() {
 
     // Mark as fetching
     fetchingRef.current = fetchKey;
-    console.log(`🔄 Fetching tokens from all chains for address: ${address}`);
 
     // Create new AbortController for this fetch
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
 
     // Not in cache, fetch from API
-    setLoading(true);
     setError(null);
     setIsFetchingTokens(true);
 
     try {
       const chainConfig = CHAINS[chainId];
       if (!chainConfig) {
-        console.warn(`Unknown chain ID: ${chainId}`);
+        logger.warn(`Unknown chain ID: ${chainId}`);
         setTokens([], address, chainId);
         return;
       }
@@ -207,7 +206,7 @@ export function useWallet() {
             allTokens.push(enrichedToken);
           }
         } catch (error) {
-          console.warn("Failed to fetch native balance:", error);
+          logger.warn("Failed to fetch native balance:", error);
         }
       }
 
@@ -253,7 +252,7 @@ export function useWallet() {
         } else if (!abortController.signal.aborted) {
           // Balances API failed, but we continue with native token
           if (response.status !== 429) {
-            console.warn(
+            logger.warn(
               "Balances API returned non-OK status:",
               response.status
             );
@@ -265,12 +264,10 @@ export function useWallet() {
           return;
         }
         // Balances API failed - this is okay, we still have native token
-        if (process.env.NODE_ENV === "development") {
-          console.warn(
-            "Balances API fetch failed (continuing with native token only):",
-            error
-          );
-        }
+        logger.warn(
+          "Balances API fetch failed (continuing with native token only):",
+          error
+        );
         // Continue without ERC-20 tokens - app still works with native token
       }
 
@@ -305,7 +302,7 @@ export function useWallet() {
         // Fetch was aborted, just return silently
         return;
       }
-      console.error("Error fetching token balances:", error);
+      logger.error("Error fetching token balances:", error);
       setError(
         error instanceof Error
           ? error.message
@@ -342,12 +339,11 @@ export function useWallet() {
       if (fetchingRef.current === fetchKey) {
         fetchingRef.current = null;
         abortControllerRef.current = null;
-        setLoading(false);
         setIsFetchingTokens(false);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isConnected, address, chainId, setTokens, setLoading, setError]);
+  }, [isConnected, address, chainId, setTokens, setError]);
   // Note: balance is intentionally excluded to prevent re-fetching on balance updates
 
   // Fetch tokens when address or chainId changes, but not when balance changes

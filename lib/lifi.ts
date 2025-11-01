@@ -3,6 +3,8 @@
  * Provides token information including symbol, name, decimals, price, and logo
  */
 
+import { logger } from "./logger";
+
 export interface LiFiToken {
   chainId: number;
   address: string;
@@ -39,7 +41,7 @@ export async function fetchLiFiTokenMetadata(): Promise<LiFiTokensResponse> {
     const data: LiFiTokensResponse = await response.json();
     return data;
   } catch (error) {
-    console.error("Error fetching Li.Fi token metadata:", error);
+    logger.error("Error fetching Li.Fi token metadata:", error);
     throw error;
   }
 }

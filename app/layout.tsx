@@ -12,6 +12,10 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Crypto Oracle Fortune",
   description: "Your personalized crypto fortune based on wallet analysis",
+  icons: {
+    icon: "/images/oraculo.jpeg",
+    apple: "/images/oraculo.jpeg",
+  },
 };
 
 export default function RootLayout({
