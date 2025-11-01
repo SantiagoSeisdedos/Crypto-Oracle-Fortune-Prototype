@@ -10,11 +10,10 @@ export function Loader() {
         animate={{ rotate: 360 }}
         transition={{
           duration: 1,
-          repeat: Infinity,
+          repeat: Number.POSITIVE_INFINITY,
           ease: "linear",
         }}
       />
     </div>
   );
 }
-

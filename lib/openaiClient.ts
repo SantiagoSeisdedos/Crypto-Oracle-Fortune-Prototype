@@ -31,5 +31,6 @@ User's Tokens:
 Conversation History:
 {HISTORY}
 
-Answer the user's question: {QUESTION}`;
+Generate a 2-3 paragraph response (max 200 words) that is mystical, metaphorical, and enlightening.
 
+Answer the user's question: {QUESTION}`;

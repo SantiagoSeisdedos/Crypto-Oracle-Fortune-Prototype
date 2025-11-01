@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { openai, CHAT_PROMPT_TEMPLATE } from "@/lib/openaiClient";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,12 +14,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Format conversation history
-    const historyText = history
-      ?.map(
-        (msg: { role: string; content: string }) =>
-          `${msg.role === "user" ? "User" : "Oracle"}: ${msg.content}`
-      )
-      .join("\n") || "No previous conversation.";
+    const historyText =
+      history
+        ?.map(
+          (msg: { role: string; content: string }) =>
+            `${msg.role === "user" ? "User" : "Oracle"}: ${msg.content}`
+        )
+        .join("\n") || "No previous conversation.";
 
     // Format the prompt
     const prompt = CHAT_PROMPT_TEMPLATE.replace("{FORTUNE}", fortune)
@@ -41,14 +43,14 @@ export async function POST(request: NextRequest) {
         },
       ],
       temperature: 0.8,
-      max_tokens: 300,
+      max_tokens: 400,
     });
 
     const response = completion.choices[0]?.message?.content || "";
 
     return NextResponse.json({ response });
   } catch (error) {
-    console.error("Error generating chat response:", error);
+    logger.error("Error generating chat response:", error);
     return NextResponse.json(
       {
         error:
@@ -60,4 +62,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

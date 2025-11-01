@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: crypto-oracle
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Add the following environment variables in the Render dashboard:
+      # Required:
+      # - NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID (your WalletConnect project ID)
+      # - OPENAI_API_KEY (your OpenAI API key)
+      # Optional (but recommended):
+      # - ALCHEMY_API_KEY (for token balance fetching)
+      # - COINMARKETCAP_API_KEY (for token price/logo fallback)

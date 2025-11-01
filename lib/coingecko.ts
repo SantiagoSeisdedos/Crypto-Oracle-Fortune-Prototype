@@ -3,6 +3,8 @@
  * Used as fallback for token metadata (logos, prices, etc.)
  */
 
+import { logger } from "./logger";
+
 export interface CoinGeckoTokenMetadata {
   id?: string;
   symbol: string;
@@ -63,7 +65,7 @@ export async function getCoinGeckoTokenMetadata(
       total_volume: data.market_data?.total_volume?.usd,
     };
   } catch (error) {
-    console.error("CoinGecko API error:", error);
+    logger.error("CoinGecko API error:", error);
     return null;
   }
 }

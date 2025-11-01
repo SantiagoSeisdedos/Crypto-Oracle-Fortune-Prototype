@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { openai, FORTUNE_PROMPT_TEMPLATE } from "@/lib/openaiClient";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ fortune });
   } catch (error) {
-    console.error("Error generating fortune:", error);
+    logger.error("Error generating fortune:", error);
     return NextResponse.json(
       {
         error:
@@ -47,4 +48,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
