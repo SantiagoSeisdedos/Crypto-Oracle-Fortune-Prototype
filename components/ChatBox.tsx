@@ -4,6 +4,9 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useChat } from "@/hooks/useChat";
 import { useChatStore } from "@/store/useChatStore";
+import { useAppStore } from "@/store/useAppStore";
+import { useFortune } from "@/hooks/useFortune";
+import { useWallet } from "@/hooks/useWallet";
 import { Check, Copy, Send, Plus } from "lucide-react";
 
 export function ChatBox() {
@@ -18,7 +21,13 @@ export function ChatBox() {
   const { sendMessage, isLoading, canSendMessage, remainingMessages } =
     useChat();
   const { getCurrentChat, canCreateChat } = useChatStore();
+  const { tokens } = useAppStore();
+  const { generateFortune, isGenerating } = useFortune();
+  const { isFetchingTokens } = useWallet();
   const currentChat = getCurrentChat();
+
+  // Check if chat has no messages (needs fortune)
+  const hasNoMessages = !currentChat || currentChat.chatHistory.length === 0;
 
   // Fix hydration error - only render after mount
   useEffect(() => {
@@ -343,19 +352,61 @@ export function ChatBox() {
       </div>
 
       {/* Input Form */}
-      {!canSendMessage ? (
-        // Show "Start new conversation" button or limit message when message limit is reached
+      {hasNoMessages ? (
+        // Show "Generate Your Fortune" button when chat has no messages
+        <div className="w-full">
+          <motion.button
+            onClick={generateFortune}
+            disabled={isGenerating || isFetchingTokens || tokens.length === 0}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed px-6 py-4 rounded-xl font-bold text-base sm:text-lg transition-all transform shadow-lg flex items-center justify-center gap-2"
+          >
+            {isGenerating ? (
+              <span className="flex items-center justify-center gap-2">
+                <motion.div
+                  className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
+                  animate={{ rotate: 360 }}
+                  transition={{
+                    duration: 1,
+                    repeat: Infinity,
+                    ease: "linear",
+                  }}
+                />
+                Generating Fortune...
+              </span>
+            ) : (
+              <>
+                <span>🔮</span>
+                Generate Your Fortune
+              </>
+            )}
+          </motion.button>
+          {tokens.length === 0 && (
+            <p className="text-xs text-gray-500 text-center mt-2">
+              Connect your wallet and load tokens first
+            </p>
+          )}
+        </div>
+      ) : !canSendMessage ? (
+        // Show "Start new conversation" button when message limit is reached
         <div className="text-center py-4">
           {canCreateChat() ? (
             <motion.button
               onClick={() => {
+                // Only allow creating new chat if user has tokens loaded
+                // This prevents creating empty chats without fortune
+                if (tokens.length === 0) {
+                  return;
+                }
                 // Create empty chat to start new conversation
                 const { addChat } = useChatStore.getState();
                 addChat();
               }}
+              disabled={tokens.length === 0}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 px-6 py-3 rounded-xl font-semibold transition-all shadow-lg flex items-center justify-center gap-2 mx-auto"
+              className="bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed px-6 py-3 rounded-xl font-semibold transition-all shadow-lg flex items-center justify-center gap-2 mx-auto"
             >
               <Plus size={18} />
               Start a new conversation
@@ -403,17 +454,19 @@ export function ChatBox() {
       )}
 
       {/* Footer hint - Hidden on mobile to save space */}
-      <div className="text-xs text-gray-500 text-center mt-2 sm:mt-3 hidden sm:block">
-        Press{" "}
-        <kbd className="px-2 py-1 bg-slate-800/50 border border-slate-600/50 rounded text-gray-400">
-          Enter
-        </kbd>{" "}
-        to send •{" "}
-        <kbd className="px-2 py-1 bg-slate-800/50 border border-slate-600/50 rounded text-gray-400">
-          Shift+Enter
-        </kbd>{" "}
-        for new line
-      </div>
+      {!canSendMessage && (
+        <div className="text-xs text-gray-500 text-center mt-2 sm:mt-3 hidden sm:block">
+          Press{" "}
+          <kbd className="px-2 py-1 bg-slate-800/50 border border-slate-600/50 rounded text-gray-400">
+            Enter
+          </kbd>{" "}
+          to send •{" "}
+          <kbd className="px-2 py-1 bg-slate-800/50 border border-slate-600/50 rounded text-gray-400">
+            Shift+Enter
+          </kbd>{" "}
+          for new line
+        </div>
+      )}
     </div>
   );
 

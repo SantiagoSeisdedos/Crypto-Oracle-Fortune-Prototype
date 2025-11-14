@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { TokenData } from "@/lib/formatTokens";
 import { formatUSD, formatCompactBalance } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { isTestnet } from "@/lib/chains";
 
 const FALLBACK_TOKEN_LOGO = "/images/token.jpg";
 
@@ -15,13 +16,11 @@ interface TokenListProps {
 export function TokenList({ tokens, selectedChainId = null }: TokenListProps) {
   const [hoveredTokenId, setHoveredTokenId] = useState<string | null>(null);
 
-
   // Filter tokens by selected chain if specified
   const filteredTokens =
     selectedChainId !== null
       ? tokens.filter((token) => token.chainId === selectedChainId)
       : tokens;
-
 
   // Sort by USD value (highest first), then by balance
   const sortedTokens = [...filteredTokens].sort((a, b) => {
@@ -59,7 +58,6 @@ export function TokenList({ tokens, selectedChainId = null }: TokenListProps) {
       </div>
     );
   }
-
 
   return (
     <motion.div
@@ -129,10 +127,11 @@ export function TokenList({ tokens, selectedChainId = null }: TokenListProps) {
                     >
                       {formatCompactBalance(token.balance)}
                     </div>
-                    
+
                     {/* Tooltip with full balance */}
                     <AnimatePresence>
-                      {hoveredTokenId === `${token.chainId}-${token.address}` && (
+                      {hoveredTokenId ===
+                        `${token.chainId}-${token.address}` && (
                         <motion.div
                           initial={{ opacity: 0, y: -5 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -151,6 +150,15 @@ export function TokenList({ tokens, selectedChainId = null }: TokenListProps) {
                     <div className="text-sm text-gray-400">
                       {formatUSD(token.usdValue)}
                     </div>
+                  )}
+                  {isTestnet(token.chainId) ? (
+                    <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded text-[10px] font-medium">
+                      TESTNET
+                    </span>
+                  ) : (
+                    <span className="px-1.5 py-0.5 bg-green-500/20 text-green-400 border border-green-500/30 rounded text-[10px] font-medium">
+                      MAINNET
+                    </span>
                   )}
                 </div>
               </div>

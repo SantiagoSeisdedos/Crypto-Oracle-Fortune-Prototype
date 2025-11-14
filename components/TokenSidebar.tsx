@@ -7,7 +7,7 @@ import { TokenList } from "@/components/TokenList";
 import { Loader } from "@/components/Loader";
 import { useAppStore } from "@/store/useAppStore";
 import { useWallet } from "@/hooks/useWallet";
-import { CHAINS, getUniqueChainIds, getChainLogo } from "@/lib/chains";
+import { CHAINS, getUniqueChainIds, getChainLogo, isTestnet, isMainnet } from "@/lib/chains";
 
 interface TokenSidebarProps {
   isOpen: boolean;
@@ -21,6 +21,7 @@ export function TokenSidebar({ isOpen, onClose }: TokenSidebarProps) {
   
   // Chain filter state
   const [selectedChainId, setSelectedChainId] = useState<number | null>(null); // null = "all"
+  const [showTestnet, setShowTestnet] = useState(false); // Default to hide testnet
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
 
@@ -65,13 +66,27 @@ export function TokenSidebar({ isOpen, onClose }: TokenSidebarProps) {
 
   const selectedChain = chainOptions.find((opt) => opt.chainId === selectedChainId);
   
+  // Filter tokens by mainnet/testnet and chain
+  const filteredTokens = useMemo(() => {
+    let filtered = tokens;
+    
+    // Filter by testnet/mainnet
+    if (!showTestnet) {
+      filtered = filtered.filter((t) => isMainnet(t.chainId));
+    }
+    
+    // Filter by selected chain
+    if (selectedChainId !== null) {
+      filtered = filtered.filter((t) => t.chainId === selectedChainId);
+    }
+    
+    return filtered;
+  }, [tokens, showTestnet, selectedChainId]);
+
   // Calculate filtered token count
   const filteredTokenCount = useMemo(() => {
-    if (selectedChainId === null) {
-      return tokens.length;
-    }
-    return tokens.filter((t) => t.chainId === selectedChainId).length;
-  }, [tokens, selectedChainId]);
+    return filteredTokens.length;
+  }, [filteredTokens]);
 
   return (
     <>
@@ -117,6 +132,25 @@ export function TokenSidebar({ isOpen, onClose }: TokenSidebarProps) {
                   <X className="text-gray-400" size={20} />
                 </motion.button>
               </div>
+
+              {/* Testnet Toggle */}
+              {isConnected && tokens.length > 0 && (
+                <div className="flex items-center justify-between gap-2 bg-slate-800/50 border border-purple-500/30 rounded-lg px-3 py-2">
+                  <span className="text-sm font-medium text-gray-300">Show Testnet</span>
+                  <button
+                    onClick={() => setShowTestnet(!showTestnet)}
+                    className={`relative w-11 h-6 rounded-full transition-colors ${
+                      showTestnet ? "bg-purple-600" : "bg-gray-600"
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                        showTestnet ? "translate-x-5" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                </div>
+              )}
 
               {/* Chain Filter */}
               {isConnected && tokens.length > 0 && uniqueChainIds.length > 0 && (
@@ -216,16 +250,20 @@ export function TokenSidebar({ isOpen, onClose }: TokenSidebarProps) {
                 <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-4 text-red-300 text-sm">
                   {error}
                 </div>
-              ) : tokens.length === 0 ? (
+              ) : filteredTokens.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-center p-8">
                   <Wallet className="text-gray-600 mb-4" size={48} />
                   <p className="text-gray-400 text-lg mb-2">No tokens found</p>
                   <p className="text-gray-500 text-sm">
-                    Your wallet might not have any tokens on this chain
+                    {!showTestnet && tokens.some(t => isTestnet(t.chainId))
+                      ? "No mainnet tokens found. Try enabling testnet tokens."
+                      : selectedChainId !== null
+                      ? "No tokens found on this chain"
+                      : "Your wallet might not have any tokens"}
                   </p>
                 </div>
               ) : (
-                <TokenList tokens={tokens} selectedChainId={selectedChainId} />
+                <TokenList tokens={filteredTokens} selectedChainId={selectedChainId} />
               )}
             </div>
 

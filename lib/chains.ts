@@ -220,3 +220,27 @@ export function clearExpiredCache(): void {
 if (typeof window !== "undefined") {
   clearExpiredCache();
 }
+
+/**
+ * Check if a chain is a testnet
+ */
+export function isTestnet(chainId: number): boolean {
+  // Common testnet chain IDs
+  const testnetChainIds = [
+    7001,    // ZetaChain Testnet
+    84532,   // Base Sepolia
+    11155111, // Ethereum Sepolia
+    5,       // Ethereum Goerli
+    80001,   // Polygon Mumbai
+    421614,  // Arbitrum Sepolia
+    11155420, // Optimism Sepolia
+  ];
+  return testnetChainIds.includes(chainId);
+}
+
+/**
+ * Check if a chain is mainnet
+ */
+export function isMainnet(chainId: number): boolean {
+  return !isTestnet(chainId);
+}

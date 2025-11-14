@@ -82,12 +82,13 @@ export default function Page() {
               </h2>
               <motion.button
                 onClick={() => {
-                  if (canCreateChat()) {
-                    // Create empty chat - user can start chatting or generate fortune
+                  if (canCreateChat() && tokens.length > 0) {
+                    // Only allow creating chat if tokens are loaded
+                    // User should generate fortune first
                     addChat();
                   }
                 }}
-                disabled={!canCreateChat()}
+                disabled={!canCreateChat() || tokens.length === 0}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className="w-full bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition-all flex items-center justify-center gap-2"
@@ -143,44 +144,20 @@ export default function Page() {
               </motion.div>
             )}
 
-            {/* Token List Info & Generate Fortune Button - Show when no chat or chat has no messages */}
+            {/* Token Info - Show when no chat or chat has no messages, but hide the button (it's now in ChatBox) */}
             {isConnected &&
               tokens.length > 0 &&
               (!currentChat || currentChat.chatHistory.length === 0) && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2, duration: 0.5 }}
+                  transition={{ duration: 0.3 }}
                   className="text-center"
                 >
                   <p className="text-gray-300 mb-4">
                     {tokens.length} token{tokens.length !== 1 ? "s" : ""} found
                     in your wallet
                   </p>
-                  <motion.button
-                    onClick={generateFortune}
-                    disabled={isGenerating || isFetchingTokens}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed px-8 py-4 rounded-xl font-bold text-lg transition-all transform shadow-lg"
-                  >
-                    {isGenerating ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <motion.div
-                          className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
-                          animate={{ rotate: 360 }}
-                          transition={{
-                            duration: 1,
-                            repeat: Infinity,
-                            ease: "linear",
-                          }}
-                        />
-                        Generating Fortune...
-                      </span>
-                    ) : (
-                      "🔮 Generate Your Fortune"
-                    )}
-                  </motion.button>
                 </motion.div>
               )}
 
@@ -220,12 +197,13 @@ export default function Page() {
                 </div>
                 <motion.button
                   onClick={() => {
-                    if (canCreateChat()) {
-                      // Create empty chat - user can start chatting or generate fortune
+                    if (canCreateChat() && tokens.length > 0) {
+                      // Only allow creating chat if tokens are loaded
+                      // User should generate fortune first
                       addChat();
                     }
                   }}
-                  disabled={!canCreateChat()}
+                  disabled={!canCreateChat() || tokens.length === 0}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   className="w-full bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition-all flex items-center justify-center gap-2"
