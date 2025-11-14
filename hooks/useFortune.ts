@@ -11,11 +11,23 @@ import { formatTokenSummary } from "@/lib/formatTokens";
 export function useFortune() {
   const [isGenerating, setIsGenerating] = useState(false);
   const { tokens, setError } = useAppStore();
-  const { addChat } = useChatStore();
+  const { addChat, canCreateChat, getCurrentChat, updateChat } = useChatStore();
 
   const generateFortune = async () => {
     if (tokens.length === 0) {
       setError("Please connect your wallet and load tokens first.");
+      return;
+    }
+
+    // Check if we can create a new chat or reuse current empty chat
+    const currentChat = getCurrentChat();
+    const canCreate = canCreateChat();
+    
+    // If current chat exists and has no messages, reuse it
+    if (currentChat && currentChat.chatHistory.length === 0) {
+      // Reuse existing empty chat
+    } else if (!canCreate) {
+      setError("Maximum number of chats reached. Please delete a chat to create a new one.");
       return;
     }
 
@@ -39,9 +51,24 @@ export function useFortune() {
       const data = await response.json();
       const fortune = data.fortune;
 
-      // Create a new chat session with fortune as the first message
-      // This will automatically add the fortune as the first assistant message
-      addChat(fortune, tokenSummary);
+      // If current chat exists and is empty, update it instead of creating new one
+      if (currentChat && currentChat.chatHistory.length === 0) {
+        updateChat(currentChat.id, {
+          fortune,
+          tokens: tokenSummary,
+          chatHistory: [
+            {
+              role: "assistant",
+              content: fortune,
+              timestamp: Date.now(),
+            },
+          ],
+        });
+      } else {
+        // Create a new chat session with fortune as the first message
+        // This will automatically add the fortune as the first assistant message
+        addChat(fortune, tokenSummary);
+      }
     } catch (error) {
       setError(
         error instanceof Error ? error.message : "Failed to generate fortune"
