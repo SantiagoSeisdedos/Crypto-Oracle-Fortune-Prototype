@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { openai, FORTUNE_PROMPT_TEMPLATE } from "@/lib/openaiClient";
+import { generateFortune } from "@/lib/openaiClient";
 import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
@@ -13,28 +13,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Format the prompt with user's tokens
-    const prompt = FORTUNE_PROMPT_TEMPLATE.replace("{TOKENS}", tokens);
-
-    // Call OpenAI API
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini", // Using GPT-4o-mini for cost efficiency
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a BaZi-inspired crypto oracle. Create mystical, poetic fortunes based on crypto wallet data. Never give financial advice.",
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      temperature: 0.9,
-      max_tokens: 400,
-    });
-
-    const fortune = completion.choices[0]?.message?.content || "";
+    // Generate fortune using unified function (automatically selects OpenAI or Gemini)
+    const fortune = await generateFortune(tokens);
 
     return NextResponse.json({ fortune });
   } catch (error) {
