@@ -1,5 +1,4 @@
 import OpenAI from "openai";
-import { GoogleGenAI } from "@google/genai";
 
 // Initialize OpenAI client (only if API key is available)
 export const openai = process.env.OPENAI_API_KEY
@@ -8,10 +7,33 @@ export const openai = process.env.OPENAI_API_KEY
     })
   : null;
 
-// Initialize Gemini client (only if API key is available)
-export const gemini = process.env.GEMINI_API_KEY
-  ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
-  : null;
+// Initialize Gemini client lazily (server-side only)
+let geminiClient: any = null;
+function getGeminiClient() {
+  if (typeof window !== "undefined") {
+    return null; // Client-side, return null
+  }
+  
+  if (geminiClient !== null) {
+    return geminiClient; // Already initialized
+  }
+
+  if (!process.env.GEMINI_API_KEY) {
+    return null;
+  }
+
+  try {
+    // Dynamic require for server-side only
+    const { GoogleGenAI } = require("@google/genai");
+    geminiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    return geminiClient;
+  } catch (error) {
+    console.warn("Failed to initialize Gemini client:", error);
+    return null;
+  }
+}
+
+export const gemini = getGeminiClient();
 
 // Determine which AI provider to use
 export function getAIProvider() {
@@ -19,7 +41,8 @@ export function getAIProvider() {
   if (openai && process.env.OPENAI_API_KEY) {
     return "openai";
   }
-  if (gemini && process.env.GEMINI_API_KEY) {
+  const geminiInstance = getGeminiClient();
+  if (geminiInstance && process.env.GEMINI_API_KEY) {
     return "gemini";
   }
   throw new Error("No AI provider API key available");
@@ -83,27 +106,11 @@ export async function generateFortune(tokens: string): Promise<string> {
       return completion.choices[0]?.message?.content || "";
     }
 
-    if (provider === "gemini" && gemini) {
-      const fullPrompt = `${systemPrompt}\n\n${prompt}`;
-      const result = await gemini.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: [{ role: "user", parts: [{ text: fullPrompt }] }],
-      });
-      // Handle different response structures
-      if (result.text) return result.text;
-      if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
-        return result.candidates[0].content.parts[0].text;
-      }
-      return "";
-    }
-  } catch (error) {
-    // Fallback to Gemini if OpenAI fails
-    if (gemini && process.env.GEMINI_API_KEY) {
-      try {
-        const systemPrompt =
-          "You are a BaZi-inspired crypto oracle. Create mystical, poetic fortunes based on crypto wallet data. Never give financial advice.";
+    if (provider === "gemini") {
+      const geminiInstance = getGeminiClient();
+      if (geminiInstance) {
         const fullPrompt = `${systemPrompt}\n\n${prompt}`;
-        const result = await gemini.models.generateContent({
+        const result = await geminiInstance.models.generateContent({
           model: "gemini-2.5-flash",
           contents: [{ role: "user", parts: [{ text: fullPrompt }] }],
         });
@@ -113,6 +120,28 @@ export async function generateFortune(tokens: string): Promise<string> {
           return result.candidates[0].content.parts[0].text;
         }
         return "";
+      }
+    }
+  } catch (error) {
+    // Fallback to Gemini if OpenAI fails
+    const geminiInstance = getGeminiClient();
+    if (geminiInstance && process.env.GEMINI_API_KEY) {
+      try {
+        if (geminiInstance) {
+          const systemPrompt =
+            "You are a BaZi-inspired crypto oracle. Create mystical, poetic fortunes based on crypto wallet data. Never give financial advice.";
+          const fullPrompt = `${systemPrompt}\n\n${prompt}`;
+          const result = await geminiInstance.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: [{ role: "user", parts: [{ text: fullPrompt }] }],
+          });
+          // Handle different response structures
+          if (result.text) return result.text;
+          if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
+            return result.candidates[0].content.parts[0].text;
+          }
+          return "";
+        }
       } catch (fallbackError) {
         throw new Error(
           `Both AI providers failed: ${
@@ -172,25 +201,29 @@ export async function generateChatResponse(
       return completion.choices[0]?.message?.content || "";
     }
 
-    if (provider === "gemini" && gemini) {
-      const fullPrompt = `${systemPrompt}\n\n${prompt}`;
-      const result = await gemini.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: [{ role: "user", parts: [{ text: fullPrompt }] }],
-      });
-      // Handle different response structures
-      if (result.text) return result.text;
-      if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
-        return result.candidates[0].content.parts[0].text;
+    if (provider === "gemini") {
+      const geminiInstance = getGeminiClient();
+      if (geminiInstance) {
+        const fullPrompt = `${systemPrompt}\n\n${prompt}`;
+        const result = await geminiInstance.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents: [{ role: "user", parts: [{ text: fullPrompt }] }],
+        });
+        // Handle different response structures
+        if (result.text) return result.text;
+        if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
+          return result.candidates[0].content.parts[0].text;
+        }
+        return "";
       }
-      return "";
     }
   } catch (error) {
     // Fallback to Gemini if OpenAI fails
-    if (gemini && process.env.GEMINI_API_KEY) {
+    const geminiInstance = getGeminiClient();
+    if (geminiInstance && process.env.GEMINI_API_KEY) {
       try {
         const fullPrompt = `${systemPrompt}\n\n${prompt}`;
-        const result = await gemini.models.generateContent({
+        const result = await geminiInstance.models.generateContent({
           model: "gemini-2.5-flash",
           contents: [{ role: "user", parts: [{ text: fullPrompt }] }],
         });
